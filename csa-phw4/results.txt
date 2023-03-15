@@ -1,0 +1,272 @@
+MacBook-Pro-bebra:ИДЗ4 alexeystepanov$ make main
+c++     main.cpp   -o main
+
+// Демонстрация стандартной работы программы: 
+// Видно, что координаты проверяются не в порядке возрастания, вывод также осуществляется 
+// потоками с порядковыми номерами, расположенными не в порядке возрастания. 
+// Т.е., как и должно быть в многопоточном приложении, порядок выполнения задач потоками 
+// определяется компьютером по своей собственной логике.
+// Так же видно, что некоторые потоки осуществляют вывод уже после достижения успеха -- 
+// причина этому в том, что компьютер решил прервать эти потоки до конца выполнения их текущих задач
+// и переключиться на тот поток, который и достигнет успеха.
+MacBook-Pro-bebra:ИДЗ4 alexeystepanov$ ./main 5 5 5
+Winnie the Pooh is not found at (0,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,2), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (0,3), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (0,5), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (0,6), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (0,7), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (0,8), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (0,9), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (1,0), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (0,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,2), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (1,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,1), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (2,0), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (2,1), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (2,2), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (2,3), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (2,4), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (2,5), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (1,1), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (1,8), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (2,7), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (2,8), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (2,9), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (3,0), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (1,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,6), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (3,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,1), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (3,7), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (3,8), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (3,2), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (4,0), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (4,1), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (3,1), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (4,3), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (3,5), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (3,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,9), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (4,8), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (4,9), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (5,0), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (5,1), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (4,4), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (5,2), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (5,3), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (5,4), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (4,5), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (5,7), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (5,8), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (5,9), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (6,0), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (6,1), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (4,2), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (6,2), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (5,6), thus Bee №4 returns to the hive
+Winnie the Pooh is found and punished at (5,5) by Bee №3
+Winnie the Pooh is not found at (6,3), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (6,4), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (6,5), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (4,7), thus Bee №1 returns to the hive
+
+// В целом то же самое, что и предыдущий пример.
+// Однако успех здесь достигается только при выполнении последней задачи,
+// собственно и видно, что несмотря на выполнение задач, осуществляемое в 
+// практически случайном порядке, по итогу оказывается осуществлён вывод результатов
+// всех задач, т.к. все они начинают выполняться до начала выполнения последней задачи.
+MacBook-Pro-bebra:ИДЗ4 alexeystepanov$ ./main 9 9 10
+Winnie the Pooh is not found at (0,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,6), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (1,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,1), thus Bee №7 returns to the hive
+Winnie the Pooh is not found at (2,3), thus Bee №7 returns to the hive
+Winnie the Pooh is not found at (0,2), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (2,5), thus Bee №7 returns to the hive
+Winnie the Pooh is not found at (2,6), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (2,7), thus Bee №7 returns to the hive
+Winnie the Pooh is not found at (1,9), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (3,0), thus Bee №7 returns to the hive
+Winnie the Pooh is not found at (1,7), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (3,2), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (3,4), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (3,6), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (3,7), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (3,8), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (2,0), thus Bee №6 returns to the hive
+Winnie the Pooh is not found at (3,9), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (4,0), thus Bee №6 returns to the hive
+Winnie the Pooh is not found at (2,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,5), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (4,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,4), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (4,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,6), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (4,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,8), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (4,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,0), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (5,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,2), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (2,8), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (5,4), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (5,6), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (2,4), thus Bee №8 returns to the hive
+Winnie the Pooh is not found at (3,3), thus Bee №7 returns to the hive
+Winnie the Pooh is not found at (5,8), thus Bee №8 returns to the hive
+Winnie the Pooh is not found at (4,2), thus Bee №6 returns to the hive
+Winnie the Pooh is not found at (2,9), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (6,1), thus Bee №6 returns to the hive
+Winnie the Pooh is not found at (6,2), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (6,3), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (6,4), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (6,5), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (6,6), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (6,7), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (6,8), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (7,0), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (5,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,1), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (7,2), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (7,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,0), thus Bee №8 returns to the hive
+Winnie the Pooh is not found at (7,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,5), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (7,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (8,0), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (8,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (8,2), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (8,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (8,4), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (8,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (8,6), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (8,7), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (8,8), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (8,9), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (4,1), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (9,1), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (9,2), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (9,3), thus Bee №9 returns to the hive
+Winnie the Pooh is not found at (9,4), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (5,7), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (9,7), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (9,8), thus Bee №10 returns to the hive
+Winnie the Pooh is not found at (9,5), thus Bee №9 returns to the hive
+Winnie the Pooh is found and punished at (9,9) by Bee №10
+Winnie the Pooh is not found at (6,9), thus Bee №6 returns to the hive
+Winnie the Pooh is not found at (9,6), thus Bee №5 returns to the hive
+Winnie the Pooh is not found at (7,8), thus Bee №8 returns to the hive
+Winnie the Pooh is not found at (7,4), thus Bee №4 returns to the hive
+Winnie the Pooh is not found at (0,1), thus Bee №2 returns to the hive
+Winnie the Pooh is not found at (5,9), thus Bee №7 returns to the hive
+Winnie the Pooh is not found at (7,1), thus Bee №3 returns to the hive
+Winnie the Pooh is not found at (9,0), thus Bee №1 returns to the hive
+
+// Первый же поток достигает успеха, выполняя первую же полученную задачу после чего
+// работа программы прекращается -- остальные потоки просто ничего не делают.
+MacBook-Pro-bebra:ИДЗ4 alexeystepanov$ ./main 0 0 10
+Winnie the Pooh is found and punished at (0,0) by Bee №1
+
+// Так как  поток, выполняющий задачи, всего один, то задачи выполняются в порядке 
+// возрастания, до тех пор пока успех не оказывается достигнут.
+MacBook-Pro-bebra:ИДЗ4 alexeystepanov$ ./main 7 6 1
+Winnie the Pooh is not found at (0,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (0,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (1,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (2,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (3,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (4,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (5,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,5), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,6), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,7), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,8), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (6,9), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,0), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,1), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,2), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,3), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,4), thus Bee №1 returns to the hive
+Winnie the Pooh is not found at (7,5), thus Bee №1 returns to the hive
+Winnie the Pooh is found and punished at (7,6) by Bee №1
