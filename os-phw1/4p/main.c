@@ -26,7 +26,12 @@ int main(int argc, char *argv[]) {
   // Создание трёх процессов
   pid_t pid1, pid2, pid3;
 
-  if (pipe(pipe1) < 0 || pipe(pipe2) < 0) { // Проверка ошибок при создании каналов
+  // Проверка ошибок при создании каналов
+  if (pipe(pipe1) < 0) {
+    perror("pipe");
+    exit(EXIT_FAILURE);
+  }
+  if (pipe(pipe2) < 0) {
     perror("pipe");
     exit(EXIT_FAILURE);
   }
