@@ -7,6 +7,7 @@
 в виде отдельного процесса.
 */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 
-const int ROOMS_CNT = 3;
+const int ROOMS_CNT = 30;
 
 int getSemaphoreSet(int cnt_sems, int sem_key) {
   int sem_id = semget(sem_key, cnt_sems, IPC_CREAT | 0666);
@@ -62,54 +63,80 @@ void runOp(int sem_id, int sem_num, int sem_op, int sem_flg) {
 void hotel_process(int visitors_sem_id, int rooms_sem_id) {
   printf("Hotel is opened.\n");
 
-  while (1) {
+  while (true) {
     printf("Waiting for visitors...\n");
     runOp(visitors_sem_id, 1, 0, SEM_UNDO);
 
-    int vsem_val = semctl(visitors_sem_id, 0, GETVAL);
-    printf("Count of still waiting visitors: %d\n", vsem_val);
-
-    if (vsem_val == 0) {
-      break;
-    }
-
+    int occupied_rooms_cnt = 0;
     printf("Checking rooms...\n");
     for (int i = 0; i < ROOMS_CNT; ++i) {
       int room_val = semctl(rooms_sem_id, i, GETVAL);
       if (room_val > 0) {
         runOp(rooms_sem_id, i, -1, 0);
         printf("Room %d will be free in %d days\n", i + 1, room_val);
-      } else {
+        occupied_rooms_cnt += room_val > 1 ? 1 : 0;
+      } /* else {
         printf("Room %d is free\n", i + 1);
-      }
+      } */
+    }
+
+    int waiting_visitors_cnt = semctl(visitors_sem_id, 0, GETVAL);
+    printf("Count of still waiting visitors: %d\n", waiting_visitors_cnt);
+
+    if (waiting_visitors_cnt == 0 && occupied_rooms_cnt == 0) {
+      runOp(visitors_sem_id, 2, 0, SEM_UNDO);
+      printf("All visitors are served\n");
+      break;
     }
 
     printf("All rooms are checked\n");
-    runOp(visitors_sem_id, 1, vsem_val, 0);
+    runOp(visitors_sem_id, 1, waiting_visitors_cnt, 0);
+  }
+}
+
+void randomiseRoomsCheck(int *rooms, int n) {
+  for (int i = 0; i < n; i++) {
+    rooms[i] = i;
+  }
+  for (int i = n - 1; i >= 1; i--) {
+    int j = rand() % (i + 1);
+    int temp = rooms[i];
+    rooms[i] = rooms[j];
+    rooms[j] = temp;
   }
 }
 
 // TODO: safe exit on SIGINT
 void visitor_process(int visitors_sem_id, int rooms_sem_id, int num) {
-  short is_done = 0;
-  srand(time(NULL) + num);
+  bool is_done = false;
+  srand(time(NULL) * num);
   printf("Visitor %d is created\n", num);
 
-  while (1) {
+  int want_to_stay_for = rand() % 7 + 1;
+  int rooms_list[ROOMS_CNT];
+  randomiseRoomsCheck(rooms_list, ROOMS_CNT);
+
+  while (true) {
     printf("Visitor %d is waiting for the hotel\'s opening\n", num);
     while (semctl(visitors_sem_id, 1, GETVAL) == 0) {
       sleep(1);
     }
 
     printf("Visitor %d is looking for a room\n", num);
-    for (int i = 0; i < ROOMS_CNT; ++i) {
+    for (int j = 0; j < ROOMS_CNT; ++j) {
+      int i = rooms_list[j];
       if (semctl(rooms_sem_id, i, GETVAL) == 0) {
-        runOp(rooms_sem_id, i, rand() % 7 + 1, 0);
+        runOp(rooms_sem_id, i, want_to_stay_for, 0);
         runOp(visitors_sem_id, 0, -1, 0);
-        is_done = 1;
+        is_done = true;
         printf("Visitor %d is staying in the room %d for %d days\n", num, i + 1,
-               semctl(rooms_sem_id, i, GETVAL));
-        break;
+               want_to_stay_for);
+        runOp(visitors_sem_id, 1, -1, 0);
+        runOp(visitors_sem_id, 2, 1, 0);
+        runOp(rooms_sem_id, i, 0, SEM_UNDO);
+        runOp(visitors_sem_id, 2, -1, 0);
+        printf("Visitor %d leaves the hotel\n", num);
+        return;
       } else {
         printf("Visitor %d finds out that room %d is busy for %d days\n", num,
                i + 1, semctl(rooms_sem_id, i, GETVAL));
@@ -137,7 +164,7 @@ int main(int argc, char **argv) {
     visitors_cnt = atoi(argv[1]);
   }
 
-  visitors_sem_id = getSemaphoreSet(2, rand() % 10000);
+  visitors_sem_id = getSemaphoreSet(3, rand() % 10000);
   rooms_sem_id = getSemaphoreSet(ROOMS_CNT, rand() % 10000);
 
   runOp(visitors_sem_id, 0, visitors_cnt, 0);
