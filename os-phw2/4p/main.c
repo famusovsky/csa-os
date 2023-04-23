@@ -18,7 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 
-const int ROOMS_CNT = 30;
+const int rooms_cnt = 30;
 int visitors_sem_id;
 int rooms_sem_id;
 
@@ -79,7 +79,7 @@ void hotel_process() {
     printf("Checking rooms...\n");
 
     // check all rooms if they are free or not
-    for (int i = 0; i < ROOMS_CNT; ++i) {
+    for (int i = 0; i < rooms_cnt; ++i) {
       int room_val = semctl(rooms_sem_id, i, GETVAL);
       if (room_val > 0) {
         // if room is occupied, decrease the number of days left for visitor to
@@ -125,8 +125,8 @@ void visitor_process(int num) {
   printf("Visitor %d is created\n", num);
 
   int want_to_stay_for = rand() % 7 + 1;
-  int rooms_list[ROOMS_CNT];
-  randomiseRoomsCheck(rooms_list, ROOMS_CNT);
+  int rooms_list[rooms_cnt];
+  randomiseRoomsCheck(rooms_list, rooms_cnt);
 
   while (true) {
     printf("Visitor %d is waiting for the hotel\'s opening\n", num);
@@ -137,7 +137,7 @@ void visitor_process(int num) {
     }
 
     printf("Visitor %d is looking for a room\n", num);
-    for (int j = 0; j < ROOMS_CNT; ++j) {
+    for (int j = 0; j < rooms_cnt; ++j) {
       int i = rooms_list[j];
 
       // check if room is free
@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
   
   // create rooms semaphore set
   // i - number of days left for i-th room to be occupied
-  rooms_sem_id = getSemaphoreSet(ROOMS_CNT, rand() % 10000);
+  rooms_sem_id = getSemaphoreSet(rooms_cnt, rand() % 10000);
 
 
   // create and start visitors processes
