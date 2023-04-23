@@ -7,6 +7,7 @@
 в виде отдельного процесса.
 */
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,8 @@
 #include <unistd.h>
 
 const int ROOMS_CNT = 30;
+int visitors_sem_id;
+int rooms_sem_id;
 
 int getSemaphoreSet(int cnt_sems, int sem_key) {
   int sem_id = semget(sem_key, cnt_sems, IPC_CREAT | 0666);
@@ -60,7 +63,7 @@ void runOp(int sem_id, int sem_num, int sem_op, int sem_flg) {
 }
 
 // TODO: safe exit on SIGINT and end of the work
-void hotel_process(int visitors_sem_id, int rooms_sem_id) {
+void hotel_process() {
   printf("Hotel is opened.\n");
 
   while (true) {
@@ -75,9 +78,7 @@ void hotel_process(int visitors_sem_id, int rooms_sem_id) {
         runOp(rooms_sem_id, i, -1, 0);
         printf("Room %d will be free in %d days\n", i + 1, room_val);
         occupied_rooms_cnt += room_val > 1 ? 1 : 0;
-      } /* else {
-        printf("Room %d is free\n", i + 1);
-      } */
+      }
     }
 
     int waiting_visitors_cnt = semctl(visitors_sem_id, 0, GETVAL);
@@ -106,9 +107,7 @@ void randomiseRoomsCheck(int *rooms, int n) {
   }
 }
 
-// TODO: safe exit on SIGINT
-void visitor_process(int visitors_sem_id, int rooms_sem_id, int num) {
-  bool is_done = false;
+void visitor_process(int num) {
   srand(time(NULL) * num);
   printf("Visitor %d is created\n", num);
 
@@ -128,7 +127,6 @@ void visitor_process(int visitors_sem_id, int rooms_sem_id, int num) {
       if (semctl(rooms_sem_id, i, GETVAL) == 0) {
         runOp(rooms_sem_id, i, want_to_stay_for, 0);
         runOp(visitors_sem_id, 0, -1, 0);
-        is_done = true;
         printf("Visitor %d is staying in the room %d for %d days\n", num, i + 1,
                want_to_stay_for);
         runOp(visitors_sem_id, 1, -1, 0);
@@ -146,18 +144,29 @@ void visitor_process(int visitors_sem_id, int rooms_sem_id, int num) {
 
     printf("Visitor %d\'s day is over\n", num);
     runOp(visitors_sem_id, 1, -1, 0);
-    if (is_done) {
-      printf("Visitor %d\'s room search is over\n", num);
-      break;
-    }
   }
 }
 
-int main(int argc, char **argv) {
-  srand(time(NULL));
+void sigintHandler(int signum) {
+  int status;
+  pid_t pid;
 
-  int visitors_sem_id;
-  int rooms_sem_id;
+  if ((pid = waitpid(-1, &status, 0)) < 0) {
+    // Error: this process is a child process
+  } else {
+    printf("Received SIGINT signal\n");
+
+    // Clean up semaphores
+    eraseSemaphore(visitors_sem_id);
+    eraseSemaphore(rooms_sem_id);
+  }
+
+  exit(signum);
+}
+
+int main(int argc, char **argv) {
+  (void)signal(SIGINT, sigintHandler);
+  srand(time(NULL));
   int visitors_cnt = 10;
 
   if (argc > 1) {
@@ -165,9 +174,10 @@ int main(int argc, char **argv) {
   }
 
   visitors_sem_id = getSemaphoreSet(3, rand() % 10000);
+  runOp(visitors_sem_id, 0, visitors_cnt, 0);
+  
   rooms_sem_id = getSemaphoreSet(ROOMS_CNT, rand() % 10000);
 
-  runOp(visitors_sem_id, 0, visitors_cnt, 0);
 
   // TODO: safe exit on SIGINT
   for (int i = 0; i < visitors_cnt; ++i) {
@@ -176,12 +186,12 @@ int main(int argc, char **argv) {
       perror("Error creating visitor process\n");
       exit(EXIT_FAILURE);
     } else if (pid == 0) {
-      visitor_process(visitors_sem_id, rooms_sem_id, i + 1);
+      visitor_process(i + 1);
       exit(EXIT_SUCCESS);
     }
   }
 
-  hotel_process(visitors_sem_id, rooms_sem_id);
+  hotel_process();
 
   eraseSemaphore(rooms_sem_id);
   eraseSemaphore(visitors_sem_id);
