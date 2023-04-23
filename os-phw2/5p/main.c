@@ -9,123 +9,148 @@
 
 #include <fcntl.h>
 #include <semaphore.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
-const int rooms_cnt = 30;
-const char *visitors_sem_name = "/visitors_sem";
-const char *rooms_shm_name = "/rooms_shm";
+#define ROOMS_CNT 30
 
-// create posix named semaphore with given name and value
-sem_t *createSemaphores(const char *name, const int value) {
-  sem_t *sem = sem_open(name, O_CREAT, 0666, value);
-  if (sem == SEM_FAILED) {
-    perror("Error creating semaphore: ");
-    exit(EXIT_FAILURE);
+const char *rooms_shm_name = "/rooms_sem";
+const char *check_sem_name = "/check_sem";
+const char *visitors_sem_name = "/visitors_sem";
+sem_t *visitor_sem[3];
+sem_t *check_sem;
+int rooms_shm_fd;
+
+// create posix named semaphore set
+void createSemaphoreSet(sem_t **sems_ptr, const int sems_cnt,
+                        const char *sem_name) {
+  for (int i = 0; i < sems_cnt; ++i) {
+    char current_name[sizeof(sem_name) + 1];
+    sprintf(current_name, "%s%d", sem_name, i);
+    sems_ptr[i] = sem_open(current_name, O_CREAT, 0666, 1);
+    if (sems_ptr[i] == SEM_FAILED) {
+      perror("Error creating semaphore: ");
+      exit(EXIT_FAILURE);
+    }
   }
-  return sem;
+
+  printf("Semaphore set with common name %s created\n", sem_name);
 }
 
-// create shared memory int array with given name and size
-int *createSharedMemory(const char *name, const int size) {
-  int shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
-  if (shm_fd < 0) {
-    perror("Error creating shared memory: ");
-    exit(EXIT_FAILURE);
+// erase posix named semaphore set
+void eraseSemaphoreSet(sem_t **sems_ptr, const int sems_cnt,
+                       const char *sem_name) {
+  printf("Removing semaphore set with common name: %s\n", sem_name);
+  for (int i = 0; i < sems_cnt; i++) {
+    char current_name[sizeof(sem_name) + 1];
+    sprintf(current_name, "%s%d", sem_name, i);
+    if (sem_unlink(current_name) < 0) {
+      perror("Error unlinking semaphore: ");
+      exit(EXIT_FAILURE);
+    }
   }
-  if (ftruncate(shm_fd, sizeof(int) * size) < 0) {
-    perror("Error truncating shared memory: ");
-    exit(EXIT_FAILURE);
+  for (int i = 0; i < sems_cnt; i++) {
+    if (sem_close(sems_ptr[i]) < 0) {
+      perror("Error closing semaphore: ");
+      exit(EXIT_FAILURE);
+    }
   }
-  int *shm = mmap(0, sizeof(int) * size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-  if (shm == MAP_FAILED) {
-    perror("Error mapping shared memory: ");
-    exit(EXIT_FAILURE);
+}
+
+// create posix named shared memory
+int createSharedMemory(const char *shm_name, const int shm_size) {
+  int *addr;
+  int shm;
+
+  // create shared memory object
+  if ((shm = shm_open(shm_name, O_RDWR, 0666)) == -1) {
+    printf("Error creating shared memory object: %s\n", shm_name);
+    perror("shm_open");
+    return NULL;
   }
-  for (int i = 0; i < size; ++i) {
-    shm[i] = 0;
+
+  // set size of shared memory object
+  addr = mmap(0, shm_size, PROT_WRITE | PROT_READ, MAP_SHARED, shm, 0);
+  if (addr == MAP_FAILED) {
+    printf("Error getting pointer to shared memory\n");
+    perror("mmap");
+    return NULL;
   }
+
+  for (int i = 0; i < shm_size; ++i) {
+    addr[i] = 0;
+  }
+
+  printf("Shared memory object with name %s created\n", shm_name);
   return shm;
 }
 
-// close posix named semaphore
-void eraseSemaphore(const char *name) {
-  printf("Removing semaphore set with name: %s\n", name);
-  sem_t *sem = sem_open(name, 0);
-  if (sem_close(sem) < 0) {
-    perror("Error closing semaphore: ");
-    exit(EXIT_FAILURE);
-  }
-  if (sem_unlink(name) < 0) {
-    perror("Error removing semaphore set: ");
-    exit(EXIT_FAILURE);
-  }
-}
+// open posix named shared memory
+int *openSharedMemory(const char *shm_name, const int shm_size) {
+  int *addr;
+  int shm;
 
-// close posix shared memory
-void eraseSharedMemory(const char *name) {
-  printf("Removing shared memory with name: %s\n", name);
-  int shm_fd = shm_open(name, O_RDWR, 0666);
-  if (shm_fd < 0) {
-    perror("Error opening shared memory: ");
-    exit(EXIT_FAILURE);
+  // open shared memory object
+  if ((shm = shm_open(shm_name, O_RDWR, 0666)) == -1) {
+    printf("Error opening shared memory object: %s\n", shm_name);
+    perror("shm_open");
+    return NULL;
   }
-  if (ftruncate(shm_fd, 0) < 0) {
-    perror("Error truncating shared memory: ");
-    exit(EXIT_FAILURE);
+
+  // set size of shared memory object
+  addr = mmap(0, shm_size, PROT_WRITE | PROT_READ, MAP_SHARED, shm, 0);
+  if (addr == MAP_FAILED) {
+    printf("Error getting pointer to shared memory\n");
+    perror("mmap");
+    return NULL;
   }
-  if (shm_unlink(name) < 0) {
-    perror("Error removing shared memory: ");
-    exit(EXIT_FAILURE);
-  }
-  close(shm_fd);
+
+  printf("Shared memory object with name %s opened\n", shm_name);
+  return addr;
 }
 
 // function for hotel work process
 void hotel_process() {
-  sem_t *visitors_sem = sem_open(visitors_sem_name, 0);
-  int *rooms_shm = createSharedMemory(rooms_shm_name, rooms_cnt);
-
   printf("Hotel is opened.\n");
+  int *rooms_shm = openSharedMemory(rooms_shm_name, ROOMS_CNT);
 
   while (true) {
     printf("Waiting for visitors...\n");
 
     // wait for all visitors to end their day
-    // runOp(visitors_sem_id, 1, 0, SEM_UNDO);
-    while (sem_getvalue(&visitors_sem[1], 0) > 0) {
+    while (sem_getvalue(visitor_sem[1], NULL) != 0) {
       sleep(1);
     }
 
-    int occupied_rooms_cnt = 0;
+    int occupied_ROOMS_CNT = 0;
     printf("Checking rooms...\n");
 
     // check all rooms if they are free or not
-    for (int i = 0; i < rooms_cnt; ++i) {
+    for (int i = 0; i < ROOMS_CNT; ++i) {
       int room_val = rooms_shm[i];
       if (room_val > 0) {
         // if room is occupied, decrease the number of days left for visitor to
         // stay
-        --rooms_shm[i];
+        rooms_shm[i]--;
         printf("Room %d will be free in %d days\n", i + 1, room_val);
-        occupied_rooms_cnt += room_val > 1 ? 1 : 0;
+        occupied_ROOMS_CNT += room_val > 1 ? 1 : 0;
       }
     }
 
-    int waiting_visitors_cnt = sem_getvalue(&visitors_sem[0], 0);
+    int waiting_visitors_cnt = sem_getvalue(visitor_sem[0], NULL);
     printf("Count of still waiting visitors: %d\n", waiting_visitors_cnt);
 
     // if all rooms are free and there are no visitors waiting, close the hotel
-    if (waiting_visitors_cnt == 0 && occupied_rooms_cnt == 0) {
+    if (waiting_visitors_cnt == 0 && occupied_ROOMS_CNT == 0) {
       // wait for all visitors to leave
-      while (sem_getvalue(&visitors_sem[2], 0) > 0) {
+      while (sem_getvalue(visitor_sem[2], NULL) != 0) {
         sleep(1);
       }
       printf("All visitors are served\n");
@@ -134,13 +159,13 @@ void hotel_process() {
 
     printf("All rooms are checked\n");
     for (int i = 0; i < waiting_visitors_cnt; ++i) {
-      sem_post(&visitors_sem[1]);
+      sem_post(visitor_sem[1]);
     }
   }
 }
 
 // function for generating a list of rooms in random order
-void randomiseRoomsCheck(int *rooms, const int n) {
+void randomiseRoomsCheck(int *rooms, int n) {
   for (int i = 0; i < n; i++) {
     rooms[i] = i;
   }
@@ -153,56 +178,51 @@ void randomiseRoomsCheck(int *rooms, const int n) {
 }
 
 // function for visitor process
-void visitor_process(const int num) {
-  sem_t *visitors_sem = sem_open(visitors_sem_name, 0);
-  int *rooms_shm = createSharedMemory(rooms_shm_name, rooms_cnt);
+void visitor_process(int num) {
+  int *rooms_shm = openSharedMemory(rooms_shm_name, ROOMS_CNT);
   srand(time(NULL) * num);
   printf("Visitor %d is created\n", num);
 
   int want_to_stay_for = rand() % 7 + 1;
-  int rooms_list[rooms_cnt];
-  randomiseRoomsCheck(rooms_list, rooms_cnt);
+  int rooms_list[ROOMS_CNT];
+  randomiseRoomsCheck(rooms_list, ROOMS_CNT);
 
   while (true) {
     printf("Visitor %d is waiting for the hotel\'s opening\n", num);
 
     // wait for the hotel to open
-    // while (semctl(visitors_sem_id, 1, GETVAL) == 0) {
-    //   sleep(1);
-    // }
-    sem_wait(&visitors_sem[1]);
+    while (sem_getvalue(visitor_sem[1], NULL) == 0) {
+      sleep(1);
+    }
 
     printf("Visitor %d is looking for a room\n", num);
-    for (int j = 0; j < rooms_cnt; ++j) {
+    for (int j = 0; j < ROOMS_CNT; ++j) {
       int i = rooms_list[j];
 
       // check if room is free
+      sem_wait(check_sem);
       if (rooms_shm[i] == 0) {
+        sem_post(check_sem);
         // occupy the room for the number of days visitor wants to stay
-        // runOp(rooms_sem_id, i, want_to_stay_for, 0);
-        rooms_shm[i] = want_to_stay_for;
+        rooms_shm[i] += want_to_stay_for;
         // reduce the number of waiting visitors
-        // runOp(visitors_sem_id, 0, -1, 0);
-        sem_wait(&visitors_sem[0]);
+        sem_wait(visitor_sem[0]);
         printf("Visitor %d is staying in the room %d for %d days\n", num, i + 1,
                want_to_stay_for);
         // reduce the number of visitors looking for a room in the moment
-        // runOp(visitors_sem_id, 1, -1, 0);
-        sem_wait(&visitors_sem[1]);
+        sem_wait(visitor_sem[1]);
         // add the number of visitors still in the hotel
-        // runOp(visitors_sem_id, 2, 1, 0);
-        sem_post(&visitors_sem[2]);
+        sem_post(visitor_sem[2]);
         // wait for the number of days visitor can stay in the hotel to end
-        // runOp(rooms_sem_id, i, 0, SEM_UNDO);
-        while (rooms_shm[i] > 0) {
+        while (rooms_shm[i] != 0) {
           sleep(1);
         }
         // reduce the number of visitors still in the hotel
-        // runOp(visitors_sem_id, 2, -1, 0);
-        sem_wait(&visitors_sem[2]);
+        sem_wait(visitor_sem[2]);
         printf("Visitor %d leaves the hotel\n", num);
         return;
       } else {
+        sem_post(check_sem);
         printf("Visitor %d finds out that room %d is busy for %d days\n", num,
                i + 1, rooms_shm[i]);
       }
@@ -211,8 +231,7 @@ void visitor_process(const int num) {
 
     printf("Visitor %d\'s day is over\n", num);
     // reduce the number of visitors looking for a room in the moment
-    // runOp(visitors_sem_id, 1, -1, 0);
-    sem_wait(&visitors_sem[1]);
+    sem_wait(visitor_sem[1]);
   }
 }
 
@@ -226,9 +245,11 @@ void sigintHandler(int signum) {
   } else {
     printf("Received SIGINT signal\n");
 
-    // Clean up semaphores
-    eraseSemaphore(visitors_sem_name);
-    eraseSharedMemory(rooms_shm_name);
+    // Clean up semaphores and shared memory
+    eraseSemaphoreSet(visitor_sem, 3, visitors_sem_name);
+    eraseSemaphoreSet(&check_sem, 1, check_sem_name);
+    shm_unlink(rooms_shm_name);
+    close(rooms_shm_fd);
   }
 
   exit(signum);
@@ -248,17 +269,17 @@ int main(int argc, char **argv) {
   // 0 - number of waiting visitors
   // 1 - number of visitors looking for a room in the moment
   // 2 - number of visitors still in the hotel
-  // visitors_sem_id = getSemaphoreSet(3, rand() % 10000);
-  sem_t *visitors_sem = createSemaphores(visitors_sem_name, 3);
-  // runOp(visitors_sem_id, 0, visitors_cnt, 0);
+  createSemaphoreSet(visitor_sem, 3, visitors_sem_name);
   for (int i = 0; i < visitors_cnt; ++i) {
-    sem_post(&visitors_sem[0]);
+    sem_post(visitor_sem[0]);
   }
 
-  // create rooms semaphore set
+  // create rooms shared memory array
   // i - number of days left for i-th room to be occupied
-  // rooms_sem_id = getSemaphoreSet(rooms_cnt, rand() % 10000);
-  int *rooms_shm = createSharedMemory(rooms_shm_name, rooms_cnt);
+  rooms_shm_fd = createSharedMemory(rooms_shm_name, ROOMS_CNT);
+
+  // create check semaphore
+  createSemaphoreSet(check_sem, 1, check_sem_name);
 
   // create and start visitors processes
   for (int i = 0; i < visitors_cnt; ++i) {
@@ -276,8 +297,10 @@ int main(int argc, char **argv) {
   hotel_process();
 
   // erase semaphores and shared memory
-  eraseSemaphore(visitors_sem_name);
-  eraseSharedMemory(rooms_shm_name);
+  eraseSemaphoreSet(visitor_sem, 3, visitors_sem_name);
+  eraseSemaphoreSet(&check_sem, 1, check_sem_name);
+  shm_unlink(rooms_shm_name);
+  close(rooms_shm_fd);
 
   printf("Hotel is closed.\n");
   return 0;
