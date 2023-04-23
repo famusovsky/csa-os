@@ -22,6 +22,7 @@ const int ROOMS_CNT = 30;
 int visitors_sem_id;
 int rooms_sem_id;
 
+// get id of  unix system v semaphore set of given size and key
 int getSemaphoreSet(int cnt_sems, int sem_key) {
   int sem_id = semget(sem_key, cnt_sems, IPC_CREAT | 0666);
   if (sem_id < 0) {
@@ -40,6 +41,7 @@ int getSemaphoreSet(int cnt_sems, int sem_key) {
   return sem_id;
 }
 
+// erase  unix system v semaphore set by id
 void eraseSemaphore(int sem_id) {
   printf("Removing semaphore set with id: %d\n", sem_id);
 
@@ -49,6 +51,7 @@ void eraseSemaphore(int sem_id) {
   }
 }
 
+// run operation on unix system v semaphore
 void runOp(int sem_id, int sem_num, int sem_op, int sem_flg) {
   struct sembuf sb;
 
@@ -62,19 +65,25 @@ void runOp(int sem_id, int sem_num, int sem_op, int sem_flg) {
   }
 }
 
-// TODO: safe exit on SIGINT and end of the work
+// function for hotel work process
 void hotel_process() {
   printf("Hotel is opened.\n");
 
   while (true) {
     printf("Waiting for visitors...\n");
+
+    // wait for all visitors to end their day
     runOp(visitors_sem_id, 1, 0, SEM_UNDO);
 
     int occupied_rooms_cnt = 0;
     printf("Checking rooms...\n");
+
+    // check all rooms if they are free or not
     for (int i = 0; i < ROOMS_CNT; ++i) {
       int room_val = semctl(rooms_sem_id, i, GETVAL);
       if (room_val > 0) {
+        // if room is occupied, decrease the number of days left for visitor to
+        // stay
         runOp(rooms_sem_id, i, -1, 0);
         printf("Room %d will be free in %d days\n", i + 1, room_val);
         occupied_rooms_cnt += room_val > 1 ? 1 : 0;
@@ -84,7 +93,9 @@ void hotel_process() {
     int waiting_visitors_cnt = semctl(visitors_sem_id, 0, GETVAL);
     printf("Count of still waiting visitors: %d\n", waiting_visitors_cnt);
 
+    // if all rooms are free and there are no visitors waiting, close the hotel
     if (waiting_visitors_cnt == 0 && occupied_rooms_cnt == 0) {
+      // wait for all visitors to leave
       runOp(visitors_sem_id, 2, 0, SEM_UNDO);
       printf("All visitors are served\n");
       break;
@@ -95,6 +106,7 @@ void hotel_process() {
   }
 }
 
+// function for generating a list of rooms in random order
 void randomiseRoomsCheck(int *rooms, int n) {
   for (int i = 0; i < n; i++) {
     rooms[i] = i;
@@ -107,6 +119,7 @@ void randomiseRoomsCheck(int *rooms, int n) {
   }
 }
 
+// function for visitor process
 void visitor_process(int num) {
   srand(time(NULL) * num);
   printf("Visitor %d is created\n", num);
@@ -117,6 +130,8 @@ void visitor_process(int num) {
 
   while (true) {
     printf("Visitor %d is waiting for the hotel\'s opening\n", num);
+
+    // wait for the hotel to open
     while (semctl(visitors_sem_id, 1, GETVAL) == 0) {
       sleep(1);
     }
@@ -124,14 +139,22 @@ void visitor_process(int num) {
     printf("Visitor %d is looking for a room\n", num);
     for (int j = 0; j < ROOMS_CNT; ++j) {
       int i = rooms_list[j];
+
+      // check if room is free
       if (semctl(rooms_sem_id, i, GETVAL) == 0) {
+        // occupy the room for the number of days visitor wants to stay
         runOp(rooms_sem_id, i, want_to_stay_for, 0);
+        // reduce the number of waiting visitors
         runOp(visitors_sem_id, 0, -1, 0);
         printf("Visitor %d is staying in the room %d for %d days\n", num, i + 1,
                want_to_stay_for);
+        // reduce the number of visitors looking for a room in the moment
         runOp(visitors_sem_id, 1, -1, 0);
+        // add the number of visitors still in the hotel
         runOp(visitors_sem_id, 2, 1, 0);
+        // wait for the number of days visitor can stay in the hotel to end
         runOp(rooms_sem_id, i, 0, SEM_UNDO);
+        // reduce the number of visitors still in the hotel
         runOp(visitors_sem_id, 2, -1, 0);
         printf("Visitor %d leaves the hotel\n", num);
         return;
@@ -143,10 +166,12 @@ void visitor_process(int num) {
     }
 
     printf("Visitor %d\'s day is over\n", num);
+    // reduce the number of visitors looking for a room in the moment
     runOp(visitors_sem_id, 1, -1, 0);
   }
 }
 
+// function for handling SIGINT signal
 void sigintHandler(int signum) {
   int status;
   pid_t pid;
@@ -165,6 +190,7 @@ void sigintHandler(int signum) {
 }
 
 int main(int argc, char **argv) {
+  // add signal handler for SIGINT
   (void)signal(SIGINT, sigintHandler);
   srand(time(NULL));
   int visitors_cnt = 10;
@@ -173,13 +199,19 @@ int main(int argc, char **argv) {
     visitors_cnt = atoi(argv[1]);
   }
 
+  // create visitors semaphore set
+  // 0 - number of waiting visitors
+  // 1 - number of visitors looking for a room in the moment
+  // 2 - number of visitors still in the hotel
   visitors_sem_id = getSemaphoreSet(3, rand() % 10000);
   runOp(visitors_sem_id, 0, visitors_cnt, 0);
   
+  // create rooms semaphore set
+  // i - number of days left for i-th room to be occupied
   rooms_sem_id = getSemaphoreSet(ROOMS_CNT, rand() % 10000);
 
 
-  // TODO: safe exit on SIGINT
+  // create and start visitors processes
   for (int i = 0; i < visitors_cnt; ++i) {
     pid_t pid;
     if ((pid = fork()) < 0) {
@@ -191,8 +223,10 @@ int main(int argc, char **argv) {
     }
   }
 
+  // start hotel process
   hotel_process();
 
+  // erase semaphores
   eraseSemaphore(rooms_sem_id);
   eraseSemaphore(visitors_sem_id);
 
