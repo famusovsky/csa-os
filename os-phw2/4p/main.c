@@ -21,6 +21,7 @@
 const int rooms_cnt = 30;
 int visitors_sem_id;
 int rooms_sem_id;
+int check_sem_id;
 
 // get id of  unix system v semaphore set of given size and key
 int getSemaphoreSet(int cnt_sems, int sem_key) {
@@ -141,7 +142,12 @@ void visitor_process(int num) {
       int i = rooms_list[j];
 
       // check if room is free
-      if (semctl(rooms_sem_id, i, GETVAL) == 0) {
+      int room_val;
+      runOp(check_sem_id, 0, 0, SEM_UNDO);
+      runOp(check_sem_id, 0, 1, 0);
+      room_val = semctl(rooms_sem_id, i, GETVAL);
+      if (room_val == 0) {
+        runOp(check_sem_id, 0, -1, 0);
         // occupy the room for the number of days visitor wants to stay
         runOp(rooms_sem_id, i, want_to_stay_for, 0);
         // reduce the number of waiting visitors
@@ -159,6 +165,7 @@ void visitor_process(int num) {
         printf("Visitor %d leaves the hotel\n", num);
         return;
       } else {
+        runOp(check_sem_id, 0, -1, 0);
         printf("Visitor %d finds out that room %d is busy for %d days\n", num,
                i + 1, semctl(rooms_sem_id, i, GETVAL));
       }
@@ -184,6 +191,7 @@ void sigintHandler(int signum) {
     // Clean up semaphores
     eraseSemaphore(visitors_sem_id);
     eraseSemaphore(rooms_sem_id);
+    eraseSemaphore(check_sem_id);
   }
 
   exit(signum);
@@ -210,6 +218,8 @@ int main(int argc, char **argv) {
   // i - number of days left for i-th room to be occupied
   rooms_sem_id = getSemaphoreSet(rooms_cnt, rand() % 10000);
 
+  // create check semaphore set
+  check_sem_id = getSemaphoreSet(1, rand() % 10000);
 
   // create and start visitors processes
   for (int i = 0; i < visitors_cnt; ++i) {
@@ -229,6 +239,7 @@ int main(int argc, char **argv) {
   // erase semaphores
   eraseSemaphore(rooms_sem_id);
   eraseSemaphore(visitors_sem_id);
+  eraseSemaphore(check_sem_id);
 
   printf("Hotel is closed.\n");
   return 0;
