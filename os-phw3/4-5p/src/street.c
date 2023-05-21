@@ -22,7 +22,7 @@
 
 #define MAX_MSG_SIZE 1024
 
-void street_process(int hotel_sock, int visitors_cnt) {
+void streetProcess(int hotel_sock, int visitors_cnt) {
   bool are_visitors_wait[visitors_cnt];
   int visitors_days_to_stay[visitors_cnt];
   int waiting_visitors_cnt = visitors_cnt;
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
 
   sendMessage(hotel_sock, "street");
 
-  street_process(hotel_sock, visitors_cnt);
+  streetProcess(hotel_sock, visitors_cnt);
 
   // Close connection
   close(hotel_sock);

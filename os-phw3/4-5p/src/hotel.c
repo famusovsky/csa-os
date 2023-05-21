@@ -9,6 +9,7 @@
 Другой клиент — это скамейки, образующие очередь ожидающих гостей.
 */
 
+#include "funcs_for_tcp.h"
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -17,15 +18,16 @@
 #include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
-#include "funcs_for_tcp.h"
 
 #define MAX_MSG_SIZE 1024
 #define DEFAULT_PORT 8888
 
 void hotelProcess(int visitors_fd, int street_fd, int rooms_cnt) {
-  int rooms[rooms_cnt];
+  int rooms_days[rooms_cnt];
+  int rooms_visitors[rooms_cnt];
   for (int i = 0; i < rooms_cnt; ++i) {
-    rooms[i] = 0;
+    rooms_days[i] = 0;
+    rooms_visitors[i] = -1;
   }
 
   char buffer[MAX_MSG_SIZE];
@@ -37,10 +39,14 @@ void hotelProcess(int visitors_fd, int street_fd, int rooms_cnt) {
 
     if (strcmp(buffer, "all done") == 0) {
       for (int i = 0; i < rooms_cnt; ++i) {
-        if (rooms[i] > 0) {
-          --rooms[i];
-          printf("\nRoom %d will be free in %d days\n", i + 1, rooms[i]);
-        } else if (rooms[i] == 0) {
+        if (rooms_days[i] > 0) {
+          --rooms_days[i];
+          if (rooms_days[i] == 0) {
+            printf("\nRoom №%d is freed, Visitor №%d is leaving the hotel\n", i + 1, rooms_visitors[i]);
+          } else {
+            printf("\nRoom №%d is occupied by Visitor №%d will be free in %d days\n", i + 1, rooms_visitors[i], rooms_days[i]);
+          }
+        } else if (rooms_days[i] == 0) {
           printf("\nRooms %d is free\n", i + 1);
         }
       }
@@ -64,7 +70,7 @@ void hotelProcess(int visitors_fd, int street_fd, int rooms_cnt) {
     if (strcmp(buffer, "free room") == 0) {
       bool is_free_found = false;
       for (int i = 0; i < rooms_cnt; ++i) {
-        if (rooms[i] == 0) {
+        if (rooms_days[i] == 0) {
           sendIntegerMessage(visitors_fd, i);
           is_free_found = true;
           break;
@@ -79,7 +85,8 @@ void hotelProcess(int visitors_fd, int street_fd, int rooms_cnt) {
       int room = getIntegerResponce(visitors_fd);
       int days = getIntegerResponce(visitors_fd);
       int num = getIntegerResponce(visitors_fd);
-      rooms[room] = days;
+      rooms_days[room] = days;
+      rooms_visitors[room] = num;
       sendMessage(street_fd, "stays num");
       sendIntegerMessage(street_fd, num);
     }
@@ -93,7 +100,6 @@ void hotelProcess(int visitors_fd, int street_fd, int rooms_cnt) {
 }
 
 int main(int argc, char *argv[]) {
-  // TODO: input port
   int hotel_fd;
   int visitors_fd;
   int street_fd;
@@ -112,7 +118,12 @@ int main(int argc, char *argv[]) {
   // Set server address and port
   hotel_addr.sin_family = AF_INET;
   hotel_addr.sin_addr.s_addr = INADDR_ANY;
-  hotel_addr.sin_port = htons(DEFAULT_PORT);
+
+  if (argc != 2) {
+    hotel_addr.sin_port = htons(DEFAULT_PORT);
+  } else {
+    hotel_addr.sin_port = htons(atoi(argv[1]));
+  }
 
   // Bind socket to address and port
   if (bind(hotel_fd, (struct sockaddr *)&hotel_addr, sizeof(hotel_addr)) < 0) {
