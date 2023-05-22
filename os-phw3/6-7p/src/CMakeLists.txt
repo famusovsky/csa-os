@@ -1,4 +1,4 @@
-project(os-phw3-4-5)
+project(os-phw3-67p C)
 
 cmake_minimum_required(VERSION 3.10)
 
